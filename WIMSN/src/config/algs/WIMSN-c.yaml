@@ -1,0 +1,99 @@
+# ======== Environment ========
+
+env: "replenishment"                    # If Environment configuration is specified in this file, 
+                                        #   you do not need to pass --env_config for running main.py
+training_runner_capacity: 1000000000    # The capacity limit used in training; It should be INF
+env_args:                               # The arguments passed to env.replenishment.Replenishment.ReplenishmentEnv
+  key: "replenishment_efficient_env-v0" # Not used
+  map_name: "n100c20000d21s*l100"       # Only used in the project name for sacred
+  n_agents: 100                         # Number of SKUs, each of which is controlled by an agent
+  task_type: "CapacityHigh"             # Specifier for standard benchmarks
+  mode: train                           # Mode for the environment
+  time_limit: 100                       # Length of each episode
+  reward: "single_lambda"               # The reward function to use. Options:
+                                        #   "old": The old reward function including exceed cost and holding cost
+                                        #   "lambda": Returning the lambda reward vector for each lambda linspace(0, 10, 51)
+                                        #   "single_lambda": Return the lambda reward with lambda given in reset(lbda=0)
+
+# ======== Evaluation and Logging ========
+
+test_greedy: True                       # Use greedy evaluation (if False, will set epsilon floor to 0)
+test_nepisode: 10                       # Evaluate the policy at the end of training for test_nepsidoes episodes
+test_interval: 50000                    # Evaluate the policy for every test_interval iterations
+log_interval: 10000                     # Print stats to console for every log_interval iterations
+visualize: False                        # Whether to visualize the policy
+visualize_interval: 5000                # Visualize the policy for every visualize_interval iterations
+# runner_log_interval: 10000            # Logging in the runner (deprecated)
+# learner_log_interval: 10000           # Logging in the learner (deprecated)
+save_model: True                        # Whether save the models to disk
+save_model_interval: 1460000            # Save the model for every save_model_interval iterations
+checkpoint_path: ""                     # If not empty, load a mac checkpoint from this path
+evaluate: False                         # Evaluate model for test_nepisode episodes and quit (no training)
+save_replay: False                      # Saving the replay of the model loaded from checkpoint_path (deprecated)
+local_results_path: "results"           # Path for local results
+use_wandb: True                         # Whether log results to wandb
+wandb_project_name: "whittle_index"     # The project name of the wandb project
+use_tensorboard: False                  # Whether log results to tensorboard
+
+# ======== Sampling ========
+
+runner: "whittle_cont"                  # The runner used to collect samples for training
+batch_size: 8                           # Collect batch_size episodes for training in each iteration
+batch_size_run: 8                       # Run batch_size_run parallel environments in the runner
+buffer_size: 5000                       # The maximum number of episodes stored in the buffer;
+                                        # 5000 volume = 5000 / 8 = 625 iterations
+buffer_cpu_only: True                   # Whether to store the buffer in the CPU memory
+lambda_reg_sampling: "gaussian_4_2"     # The distribution of the lambda sampling procedure
+
+# ======== Algorithm ========
+
+name: "whittle_iql_ir"                  # The name of the algorithm
+run: "whittle_cont_run"                 # Which runner REGISTER to use
+use_cuda: True                          # Whether to use GPU
+seed: 302                               # The random seed used in numpy, torch, etc.
+t_max: 5020000                          # Train t_max iterations in total
+
+action_selector: "epsilon_greedy"       # How to select actions during the training (and maybe evaluation depending on test_greedy)
+epsilon_start: 1.0                      # Annealing from epsilon_start 
+epsilon_finish: 0.05                    #   to epsilon_finish linearly
+epsilon_anneal_time: 4000000            #   in epsilon_anneal_time iterations
+save_probs: False                       # Whether to also return the action selection probablity from the action selector
+
+learner: "local_ldqn_learner"           # Which learner REGISTER to use for training DQN 
+w_learner: "whittle_grad_learner"       # Which learner REGISTER to use for the Whittle index network
+
+mac: "ldqn_mac"                         # Which multi-agent controller REGISTER to use
+                                        #   l indicates that the DQN also recieves a scaler lambda as the input
+agent: "rnn_lambda"                     # Which NN structure REGISTER to use for the Q network
+                                        #   n_rnn indicates a shared-parameter RNN Q network for each agent (FC-GRU-FC)
+w_mac: "whittle_cont_mac"               # Which multi-agent controller REGISTER to use for the Whittle index network
+w_agent: "whittle_index_network"        # Which NN structure REGISTER to use for the Whittle index network
+w_agent_offset: 4                       # Offset added to the w_agent network
+
+use_layer_norm: False                   # Whether to use layer norm (deprecated)
+use_orthogonal: False                   # Whether to use layer orthogonal (deprecated)
+agent_output_type: "q"                  # What is the output format of the agent (Q network)
+actor_input_seq_str: "o_la"             # The format of the inputs to the networks;
+                                        #   o_la indicates the local state (observatoin) plus one-hot last actions (e.g., dim=86+34)
+obs_last_action: True                   # Whether include the agent"s last action (one_hot) in the observation
+obs_agent_id: False                     # Whether to append the one-hot agent id to the observation
+hidden_dim: 128                         # The number of hidden units for the Q network
+lambda_hidden_dim: 16                   # The number of units that the lambda value is expanded into
+whittle_hidden_dim: 128                 # The number of hiddent units for the Whittle index network
+
+gamma: 0.985                            # Discount rate for the MDP
+optim: "RMSprop"                        # Whether to use "Adam" or "RMSprop"
+lr: 0.0005                              # Learning rate used for Q network training
+w_lr: 0.0001                            # Learning rate used for Whittle index network training
+optim_alpha: 0.99                       # alpha in RMSProp
+optim_eps: 0.00001                      # epsilon in RMSProp
+grad_norm_clip: 10                      # Reduce magnitude of gradients above this L2 norm
+
+use_n_lambda: False                     # Whether to learn the Q values for different lambdas
+use_individual_rewards: True            # Whether to train the agents using individual rewards
+use_mean_team_reward: False             # Whether to train the agents using mean team rewards
+use_reward_normalization: True          # Whether to normalize reward; 
+                                        #   If True, we estimate a reward scaler for each lambda 
+                                        #   and use it to transform the reward with these fixed scalers
+use_double_q: True                      # Whether to use double Q 
+target_update_interval: 500             # Update the target Q network after target_update_interval iterations

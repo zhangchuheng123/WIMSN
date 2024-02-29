@@ -1,0 +1,10 @@
+env: "replenishment"
+
+env_args:
+  key: "replenishment_efficient_env-v0"
+  map_name: "sku1000.Standard"
+  n_agents: 1000
+  task_type: "Standard"
+  mode: train
+  time_limit: 100
+  reward: "old"

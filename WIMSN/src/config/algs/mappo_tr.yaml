@@ -1,0 +1,56 @@
+env_args:
+  key: "replenishment_efficient_env-v0"
+  map_name: "n100c10000d21s*l100"
+  n_agents: 100
+  task_type: "Standard"
+  mode: train
+  time_limit: 100
+test_interval: 8000
+log_interval: 8000
+runner_log_interval: 8000
+learner_log_interval: 8000
+
+action_selector: "multinomial"
+epsilon_start: .0
+epsilon_finish: .0
+epsilon_anneal_time: 100000
+mask_before_softmax: True
+
+runner: "parallel"
+
+buffer_size: 8
+batch_size_run: 8
+batch_size: 8
+
+mac: 'mappo_mac'
+agent: 'n_rnn'
+hidden_dim: 128
+actor_input_seq_str: 'o_la'
+
+obs_agent_id: False
+
+lr: 0.0005
+critic_coef: 0.5
+entropy_coef: 0 #0.001 
+reg_coef: 0.01
+gamma: 0.985
+gae_lambda: 0.95
+mini_epochs: 4
+eps_clip: 0.2
+save_probs: True
+
+agent_output_type: "pi_logits"
+learner: "local_ppo_learner"
+critic_type: "mappo_rnn_critic_share"
+critic_input_seq_str: 's'
+
+use_layer_norm: True 
+use_orthogonal: True
+gain: 0.01
+use_value_norm: True
+use_zero_like_context: True
+use_individual_rewards: False
+use_mean_team_reward: True
+
+name: "mappo_tr"
+run: "mappo_run"
